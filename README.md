@@ -4,12 +4,13 @@
 
 This AWS Sample is an example of a Python script that generates a report of AWS WAF Classic resources, including Regional Web ACLs and CloudFront Web ACLs, along with their associated resources. It leverages the Boto3 library to interact with the AWS APIs.  The script retrieves the available regions, fetches the Web ACL details from AWS WAF and Amazon CloudFront, and gathers information about the associated resources. The report data is then written to either an S3 bucket or a local CSV file, providing visibility into the WAF Classic configuration across multiple AWS regions and services [Amazon CloudFront Distributions, Amazon Load Balancers, AWS API Gateways].
 
-> PLEASE NOTE: It is recommended to [migrate from AWS WAF Classic to AWS WAF](https://docs.aws.amazon.com/waf/latest/developerguide/waf-migrating-procedure.html). This sample script will generate a report to help you identify WAF Classic in use across your accounts. Please test in test environments first and tailor these scripts for your use-case.
+> PLEASE NOTE: It is recommended to [migrate from AWS WAF Classic Rules](https://docs.aws.amazon.com/waf/latest/developerguide/waf-migrating-procedure.html). This sample script will generate a report to help you identify Classic Rules in use across your accounts. Please test in test environments first and tailor these scripts for your use-case.
 
 ## Prerequisites
 
 - Python 3.6 or later
-- AWS CLI or AWS credentials configured with appropriate permissions to access WAF Classic, S3, and EC2 services
+   * python libraries dependancies: boto3, arpgparse, PrettyTable
+- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) or AWS credentials configured with appropriate permissions to access WAF Classic, S3, and EC2 services
 
 ## Installation
 
@@ -44,8 +45,8 @@ waf-classic-report.txt in the current directory.
 python main.py --bucket-name <S3_BUCKET_NAME> --prefix <S3_PREFIX> --bucket-region <AWS_REGION>
 
 --bucket-name: The name of the S3 bucket to write the report to (optional).
---prefix: The S3 prefix for the report file (default: waf-classic-report.txt).
---bucket-region: The AWS region for the S3 bucket (default: us-east-1).
+--prefix: The S3 prefix for the report file (default: waf-classic-report.txt, optional).
+--bucket-region: The AWS region for the S3 bucket (default: us-east-1, optional).
 ```
 
 ### Requirements
@@ -69,13 +70,13 @@ For this script to operate fully, the following IAM permissions are required:
 - waf-regional:ListWebACLs
 - waf-regional:ListResourcesForWebACL
 
-#### S3 (if writing the report to an S3 bucket):
+#### S3 (only needed if writing the report to an S3 bucket):
 
-s3:PutObject
+- s3:PutObject
 
 #### Example Policy:
 
-To create the required IAM role for this code, [create an IAM policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user.html) with the required permissions and then [assume the role](https://repost.aws/knowledge-center/iam-assume-role-cli):
+To create the required IAM role for this code, [create an IAM policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user.html) with the required permissions and then [assume the role](https://repost.aws/knowledge-center/iam-assume-role-cli). Substiture the <BUCKET_NAME> for your bucket in the policy below if you need to write the report to S3, otherwise do not include the S3 PUTOBJET permission:
 
 ```bash
 aws iam create-policy \
@@ -142,4 +143,4 @@ Contributions are welcome! Please open an issue or submit a pull request.
 
 ### Acknowledgments
 
-This script was developed using the AWS SDK for Python (Boto3) and the AWS WAF Classic API documentation.
+This script was developed using the [AWS SDK for Python (Boto3)](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html) and the [AWS WAF Classic API documentation](https://docs.aws.amazon.com/waf/latest/developerguide/classic-waf-chapter.html).
