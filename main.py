@@ -132,21 +132,17 @@ def main():
             report_data.append({'Region': 'CLOUDFRONT', 'WebACLName': {waf_name}, 'WebACLId': {waf_id}, 'AssociatedResources': {distribution_id}, 'Enabled' : {distribution_enabled}})
             print(f"WAF ID: {waf_id}, CloudFront Distribution ID: {distribution_id}")
 
-    if not bucket_name:
+    if bucket_name:
         write_report_to_s3(report_data, bucket_name, object_key, bucket_region)
-        print("Report written to S3, report.csv in current folder.")
+        print(f"Report written to s3://{bucket_name}/{object_key}")
     else:
-        print("No bucket name provided. Report not put to S3, report.csv in current folder.")
+        print("No bucket name provided. Report not uploaded to S3.")
+        with open(f"{args.prefix}", 'w', newline='') as csvfile:
+            fieldnames = ['Region', 'WebACLName', 'WebACLId', 'AssociatedResources', 'Enabled']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(report_data)
+        print("Report written to report.csv in the current directory.")
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
