@@ -3,6 +3,7 @@ import boto3
 from botocore.exceptions import ClientError
 import csv
 import os
+from prettytable import PrettyTable
 
 # Create an argument parser
 parser = argparse.ArgumentParser(description='Generate a report for WAF Classic resources.')
@@ -14,12 +15,21 @@ parser.add_argument('--bucket-region', default='us-east-1', help='AWS region for
 
 # Function to get all available regions
 def get_available_regions(service):
-    session = boto3.session.Session()
+    try:
+        session = boto3.session.Session()
+    except ClientError as e:
+        print(f"Error getting available regions: {e}")
+        return
+    
     return session.get_available_regions(service)
 
 # Function to get WAF Classic Regional Web ACLs and associated resources
 def get_regional_waf_classic_resources(region):
-    waf_regional = boto3.client('waf-regional', region_name=region)
+    try:
+        waf_regional = boto3.client('waf-regional', region_name=region)
+    except ClientError as e:
+        print(f"Error creating WAF Regional client for region {region}: {e}")
+        return
     
     regional_resources = []
 
@@ -56,7 +66,12 @@ def generate_waf_cloudfront_report():
     try:
         # Create AWS client for CloudFront and WAF
         cloudfront = boto3.client('cloudfront', region_name='us-east-1')
-        waf = boto3.client('waf')
+        
+        try:
+            waf = boto3.client('waf')
+        except  ClientError as e:
+            print(f"Error creating WAF client: {e}")
+            
         
         # Get CloudFront distributions
         distributions = cloudfront.list_distributions()['DistributionList']['Items']
@@ -91,19 +106,41 @@ def generate_waf_cloudfront_report():
 
 # Function to write the report to S3
 def write_report_to_s3(report_data, bucket_name, object_key, bucket_region):
-    s3 = boto3.client('s3', region_name=bucket_region)
     
     try:
-        with open('./report.csv', 'w', newline='') as csvfile:
+        s3 = boto3.client('s3', region_name=bucket_region)
+    except ClientError as e:
+        print(f"Error creating S3 client: {e}")
+        return
+    
+    try:
+        with open(f"{args.prefix}", 'w', newline='') as csvfile:
             fieldnames = ['Region', 'WebACLName', 'WebACLId', 'AssociatedResources','Enabled']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(report_data)
         
-        s3.upload_file('./report.csv', bucket_name, object_key)
+        s3.upload_file(f"{args.prefix}", bucket_name, object_key)
         print(f"Report written to s3://{bucket_name}/{object_key}")
     except ClientError as e:
         print(f"Error writing report to S3: {e}")
+
+def print_report_to_screen(report_data):
+    # Create a PrettyTable instance
+    table = PrettyTable()
+
+    # Get the fieldnames from the first row of the report data
+    fieldnames = list(report_data[0].keys())
+
+    # Add the column headers to the table
+    table.field_names = fieldnames
+
+    # Add each row of data to the table
+    for row in report_data:
+        table.add_row(row.values())
+
+    # Print the table to the screen
+    print(table)
 
 # Main function
 def main():
@@ -142,7 +179,10 @@ def main():
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(report_data)
-        print("Report written to report.csv in the current directory.")
+        print("Report written to the current directory.")
+
+    # Print the report to the screen
+    print_report_to_screen(report_data)
 
 if __name__ == "__main__":
     main()
